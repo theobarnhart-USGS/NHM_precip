@@ -1,2 +1,5 @@
 *.nc
-./data/*
+data/*
+figures/*
+*.png
+*.pdf
