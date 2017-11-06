@@ -1,19 +1,21 @@
-fl = '' # shapefile
+
 
 import rasterio as rs
 import geopandas as gpd
 from netCDF4 import Dataset
 import os
 import datetime
-import progressbar as bar
-impor
+import sys
 
+reg = sys.argv[1] # pull the argument passed to the script
+
+fl = '../nhru_%s_clean.shp'%reg # shapefile
 
 def process_tiffs(df):
     reg = df.reg
     nhru = df.nhruID
     
-    fl = '$GLOBAL_SCRATCH/AEA_tiffs/HUC_%s_nhruID_%s.tiff'%(reg,nhru)
+    fl = '../HUC_%s_nhruID_%s.tiff'%(reg,nhru) # path to the tiffs
     
     if os.path.isfile(fl): # only proceed if the tiff exists
         with rs.open(fl) as ds:
@@ -70,10 +72,11 @@ def compute_contributions(fl,test=False):
             print('data frames are different lengths')
     
     dat.to_pickle('~/projects/NHM_precipitation/data/nhru_contrib/huc_%s_cell_contrib.pcl'%reg)
+    dat.to_pickle('../huc_%s_cell_contrib.pcl'%reg)
     print('%s Complete!'%reg)
 
 # load the precip data
-fl = './stage4_map_daily_20041220-20150107.nc'
+fl = '../stage4_map_daily_20041220-20150107.nc'
 ds = Dataset(fl,'r')
 m,k,l = ds.variables['Total_precipitation_surface_1_Hour_Accumulation'].shape # get the dimensions of the precip data
 
@@ -111,7 +114,7 @@ def compute_precip(df,datetime=[],rast=[],out=[]):
     def generate_output(fl):
     reg = fl.split('_')[-2] # extract the region
     print('Starting region %s...'%reg)
-    dat = pd.read_pickle('~/projects/NHM_precipitation/data/nhru_contrib/huc_%s_cell_contrib.pcl'%reg) # load the contributing cells and percentages
+    dat = pd.read_pickle('../huc_%s_cell_contrib.pcl'%reg) # load the contributing cells and percentages
     dat.sort_values('reg_hruID',inplace=True,ascending=True) # sort by regional hru
     
     # prepair the output data frame
@@ -140,8 +143,11 @@ def compute_precip(df,datetime=[],rast=[],out=[]):
         pb.update(i)
     
     
-    out.to_csv('./data/hru_%s_stage_4_precip.cbh'%reg,sep=' ',header=False,index=False,float_format='%.2f',na_rep='-999')
-    out.to_pickle('./data/hru_%s_stage_4_precip.pcl'%reg)
+    out.to_csv('../hru_%s_stage_4_precip.cbh'%reg,sep=' ',header=False,index=False,float_format='%.2f',na_rep='-999')
+    out.to_pickle('../hru_%s_stage_4_precip.pcl'%reg)
     
     print('Region %s complete!'%reg)
 
+    # run these functions
+    compute_contributions(fl, test=True)
+    generate_output(fl)
