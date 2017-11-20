@@ -2,7 +2,7 @@
 # Theodore Barnhart | tbarnhart@usgs.gov
 # 20171106
 
-$reg=$1 # parse the first argument passed to the wrapper
+reg=$1 # parse the first argument passed to the wrapper
 
 # move files to the node:
 cp ~/projects/NHM_precipitation/data/stage4_map_daily_20041220-20150107.nc $GLOBAL_SCRATCH/ # move the precip data

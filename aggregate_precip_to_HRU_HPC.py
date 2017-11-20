@@ -1,5 +1,5 @@
-
-
+import pandas as pd
+import numpy as np
 import rasterio as rs
 import geopandas as gpd
 from netCDF4 import Dataset
@@ -50,8 +50,8 @@ def compute_contributions(fl,test=False):
     dat['cells'] = cells # insert results back into the dataframe
     dat['percents'] = percents
 
-    if (reg == '08') | (reg == '10U'): # if either of these regions occur
-        dat2 = pd.read_pickle('~/projects/NHM_precipitation/data/reg%s_unclipped.pcl'%reg) # load the missing data
+    if (reg == '08') | (reg == '10U') | (reg == '04'): # if either of these regions occur
+        dat2 = pd.read_pickle('/home/tbarnhart/projects/NHM_precipitation/data/reg%s_unclipped.pcl'%reg) # load the missing data
         
         for nhru in dat2.nhruID: # remove the overlapping rows from the data frame
             dat = dat[dat.nhruID != nhru]
@@ -71,13 +71,13 @@ def compute_contributions(fl,test=False):
         if len(tmp) - len(dat) > 0:
             print('data frames are different lengths')
     
-    dat.to_pickle('~/projects/NHM_precipitation/data/nhru_contrib/huc_%s_cell_contrib.pcl'%reg)
+    dat.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/nhru_contrib/huc_%s_cell_contrib.pcl'%reg)
     dat.to_pickle('../huc_%s_cell_contrib.pcl'%reg)
     print('%s Complete!'%reg)
 
 # load the precip data
-fl = '../stage4_map_daily_20041220-20150107.nc'
-ds = Dataset(fl,'r')
+infl = '../stage4_map_daily_20041220-20150107.nc'
+ds = Dataset(infl,'r')
 m,k,l = ds.variables['Total_precipitation_surface_1_Hour_Accumulation'].shape # get the dimensions of the precip data
 
 # compute the dates
@@ -111,7 +111,9 @@ def compute_precip(df,datetime=[],rast=[],out=[]):
 
     out.loc[datetime,'hru_%s'%df.reg_hruID] = weighted_precip # insert into the out data frame
 
-    def generate_output(fl):
+
+
+def generate_output(fl):
     reg = fl.split('_')[-2] # extract the region
     print('Starting region %s...'%reg)
     dat = pd.read_pickle('../huc_%s_cell_contrib.pcl'%reg) # load the contributing cells and percentages
@@ -132,22 +134,19 @@ def compute_precip(df,datetime=[],rast=[],out=[]):
         out['hru_%s'%hru] = -999
 
     del out['datetime'] # clean up
-    
-    pb = bar.ProgressBar(min_value=0,max_value=m)
 
     for i in range(m): # iterate through slices of the dataset
         rast = np.array(ds.variables['Total_precipitation_surface_1_Hour_Accumulation'][i,:,:]) # pull a slice
         rast.shape = (k*l) # reshape the dataset in the say way as the index values
-
+        print('Starting: %s'%(times[i])) #print 
         dat.apply(compute_precip,axis=1,datetime=times[i],rast=rast,out=out) # compute precip for each hru for the time slice
-        pb.update(i)
-    
+        print('Completed: %s'%(times[i]))
     
     out.to_csv('../hru_%s_stage_4_precip.cbh'%reg,sep=' ',header=False,index=False,float_format='%.2f',na_rep='-999')
     out.to_pickle('../hru_%s_stage_4_precip.pcl'%reg)
     
     print('Region %s complete!'%reg)
 
-    # run these functions
-    compute_contributions(fl, test=True)
-    generate_output(fl)
+# run these functions
+compute_contributions(fl, test=True)
+generate_output(fl)
