@@ -56,6 +56,12 @@ def process_tiffs(df,gt=[],rb=[]):
             percents.append(len(rast[rast==cell])/k) # divide by the total cells in the basin to get the propotion of each cell in the basin
 
         cells = list(cells)
+        
+        if len(cells) == 0: # if the clipped raster is empty, 
+            print('W - National HRU %s tiff missing, finding index value at centroid'%df.hru_id_nat)
+            cells = [get_cell(df.geometry,gt = gt, rb = rb)]
+            percents = [1.]
+        
         return cells,percents
     
     elif os.path.isfile(fl) == False: # if the raster does not exist, find the grid cell that the hru centroid occupies
