@@ -6,3 +6,4 @@ figures/*
 *.csv
 *.tif
 *.tiff
+.ipynb_checkpoints/*
