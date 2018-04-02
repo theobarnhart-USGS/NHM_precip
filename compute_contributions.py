@@ -47,7 +47,7 @@ def process_tiffs(df,gt=[],rb=[]):
         n,m = rast.shape
         rast.shape = n*m
         rast = rast[rast!=0] # remove no data cells
-        k = 100 # number of smaller cells in each index cell
+        k = float(len(rast)) # number of smaller cells in each index cell
 
         cells = np.unique(rast)
         #print(len(cells))
