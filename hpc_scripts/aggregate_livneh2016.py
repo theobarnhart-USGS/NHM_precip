@@ -1,9 +1,4 @@
 
-# coding: utf-8
-
-# In[29]:
-
-
 import pandas as pd
 import geopandas as gpd
 import numpy as np
@@ -46,19 +41,11 @@ def get_keys(df,idxraster=[]):
     
     return x,y
 
-
-# In[7]:
-
-
 ## generate the time aspect of the data
 # the Livneh data start at 1915 and end 2015
 
 dates = pd.date_range(start = '1915-01-01', end = '2015-12-31', freq = 'D')
 #months = pd.date_range(start = '1915-01', end = '2015-12', freq = 'M')
-
-
-# In[47]:
-
 
 with rs.open('./data/livneh_idx.tiff') as ds:
     idxRast = np.flipud(ds.read(1)) # flip this to deal with the change from tiff to array
@@ -98,20 +85,12 @@ x,y = zip(*res)
 dat['x_local'] = x
 dat['y_local'] = y
 
-
-# In[71]:
-
-
 def get_fractional_date(fl):
     yearMonth = fl.split('.')[-2]
     year = float(yearMonth[0:4])
     month = float(yearMonth[4:6])-0.5
     
     return year + (month/12.)
-
-
-# In[76]:
-
 
 # create and sort a data frame to ensure that files are read in the correct order.
 livneh = pd.DataFrame()
@@ -139,10 +118,6 @@ Tmin[Tmin == noData] = np.NaN
 Tmax[Tmax == noData] = np.NaN
 Prec[Prec == noData] = np.NaN
 
-
-# In[72]:
-
-
 # now loop through each nhru in the region
 # prepair the output data frame
 out = pd.DataFrame()
@@ -164,10 +139,6 @@ Pout = out.copy()
 Tminout = out.copy()
 Tmaxout = out.copy()
 
-
-# In[33]:
-
-
 for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents):
     PrecTmp = Prec[:,x,y]
     TminTmp = Tmin[:,x,y]
@@ -186,12 +157,7 @@ for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents)
     Tminout['hru_%s'%hru] = (TminTmp * (9./5.)) + 32 # deg C >> Deg F
     Tmaxout['hru_%s'%hru] = (TmaxTmp * (9./5.)) + 32. # deg C >> Deg F
 
-
-# In[ ]:
-
-
 # save the data
 Pout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/livneh_Prec_reg_%s.pcl'%reg)
 Tminout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/livneh_Tmin_reg_%s.pcl'%reg)
 Tmaxout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/livneh_Tmax_reg_%s.pcl'%reg)
-
