@@ -5,7 +5,6 @@ import numpy as np
 import glob as glob
 from netCDF4 import Dataset
 import rasterio as rs
-import progressbar as pb
 import sys
 
 reg = sys.argv[1]
@@ -47,10 +46,10 @@ def get_keys(df,idxraster=[]):
 dates = pd.date_range(start = '1915-01-01', end = '2015-12-31', freq = 'D')
 #months = pd.date_range(start = '1915-01', end = '2015-12', freq = 'M')
 
-with rs.open('./data/livneh_idx.tiff') as ds:
+with rs.open('../data/livneh_idx.tiff') as ds:
     idxRast = np.flipud(ds.read(1)) # flip this to deal with the change from tiff to array
 
-dat = pd.read_pickle('./data/livneh_huc_%s_cell_contrib.pcl'%reg)
+dat = pd.read_pickle('../data/livneh_huc_%s_cell_contrib.pcl'%reg)
 
 # get the index values of each cell
 res = dat.apply(get_keys,axis=1,idxraster=idxRast)
@@ -138,6 +137,7 @@ del out['datetime'] # clean up
 Pout = out.copy()
 Tminout = out.copy()
 Tmaxout = out.copy()
+numHRU = float(len(dat))
 
 for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents):
     PrecTmp = Prec[:,x,y]
@@ -156,6 +156,8 @@ for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents)
     Pout['hru_%s'%hru] = PrecTmp * 0.0393701 # mm >> inches
     Tminout['hru_%s'%hru] = (TminTmp * (9./5.)) + 32 # deg C >> Deg F
     Tmaxout['hru_%s'%hru] = (TmaxTmp * (9./5.)) + 32. # deg C >> Deg F
+    print('Completed %s%'%(ct/numHRU*100.))
+    ct += 1
 
 # save the data
 Pout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/livneh_Prec_reg_%s.pcl'%reg)
