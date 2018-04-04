@@ -77,6 +77,8 @@ extents = [minX,maxX,minY,maxY]
 
 idxLocal = idxRast[minX:maxX,minY:maxY] # subset the index raster
 
+r,t = idxLocal.shape
+
 res = dat.apply(get_keys,axis=1,idxraster = idxLocal) # recompute local indices to subset the data stack.
 
 x,y = zip(*res)
@@ -96,19 +98,23 @@ livneh = pd.DataFrame()
 livneh['files'] = glob.glob('/home/tbarnhart/projects/NHM_precipitation/data/livneh2016/*.nc')
 livneh['date'] = livneh.files.map(get_fractional_date)
 livneh.sort_values('date',inplace=True,ascending=True)
-
 livneh.reset_index()
-fl = livneh.files[0]
-liv = Dataset(fl)
-Tmin = np.array(liv.variables['Tmin'][:,minX:maxX,minY:maxY],dtype=np.float64)
-Tmax = np.array(liv.variables['Tmax'][:,minX:maxX,minY:maxY],dtype=np.float64)
-Prec = np.array(liv.variables['Prec'][:,minX:maxX,minY:maxY],dtype=np.float64)
 
-for fl in livneh.files[1:]:
+# preallocate the arrays
+Tmin = np.ndarray((len(dates),r,t),dtype=np.float64)
+Tmax = np.ndarray((len(dates),r,t),dtype=np.float64)
+Prec = np.ndarray((len(dates),r,t),dtype=np.float64)
+liv = Dataset(fl)
+
+ct = 0 # indexer for axis 0
+for fl in livneh.files:
     liv = Dataset(fl)
-    Tmin = np.concatenate((Tmin,np.array(liv.variables['Tmin'][:,minX:maxX,minY:maxY],dtype=np.float64)),axis=0)
-    Tmax = np.concatenate((Tmax,np.array(liv.variables['Tmax'][:,minX:maxX,minY:maxY],dtype=np.float64)),axis=0)
-    Prec = np.concatenate((Prec,np.array(liv.variables['Prec'][:,minX:maxX,minY:maxY],dtype=np.float64)),axis=0)
+    q,w,e = np.array(liv.variables['Tmin']).shape # extract the shape, we are interested in q
+
+    Tmin[ct:(ct+q-1),:,:] =np.array(liv.variables['Tmin'][:,minX:maxX,minY:maxY],dtype=np.float64)
+    Tmax[ct:(ct+q-1),:,:] = np.array(liv.variables['Tmax'][:,minX:maxX,minY:maxY],dtype=np.float64)
+    Prec[ct:(ct+q-1),:,:] = np.array(liv.variables['Prec'][:,minX:maxX,minY:maxY],dtype=np.float64)
+    ct += q # increment the counter
     
 noData = 1e+20
 
