@@ -6,6 +6,7 @@ import glob as glob
 from netCDF4 import Dataset
 import rasterio as rs
 import sys
+import os.path
 
 reg = sys.argv[1]
 
@@ -93,36 +94,53 @@ def get_fractional_date(fl):
     
     return year + (month/12.)
 
+# check if the livneh data has already been gathered
+gatheredDatFL = '/home/tbarnhart/projects/NHM_precipitation/data/livneh_regional/region_%s.npz'%reg
+outfl = '/home/tbarnhart/projects/NHM_precipitation/data/livneh_regional/region_%s.npz'%reg
+if os.path.isfile(gatheredDatFL) == False: 
 # create and sort a data frame to ensure that files are read in the correct order.
-livneh = pd.DataFrame()
-livneh['files'] = glob.glob('/home/tbarnhart/projects/NHM_precipitation/data/livneh2016/*.nc')
-livneh['date'] = livneh.files.map(get_fractional_date)
-livneh.sort_values('date',inplace=True,ascending=True)
-livneh.reset_index()
+	livneh = pd.DataFrame()
+	livneh['files'] = glob.glob('/home/tbarnhart/projects/NHM_precipitation/data/livneh2016/*.nc')
+	livneh['date'] = livneh.files.map(get_fractional_date)
+	livneh.sort_values('date',inplace=True,ascending=True)
+	livneh.reset_index()
 
-# preallocate the arrays
-Tmin = np.ndarray((len(dates),r,t),dtype=np.float64)
-Tmax = np.ndarray((len(dates),r,t),dtype=np.float64)
-Prec = np.ndarray((len(dates),r,t),dtype=np.float64)
-liv = Dataset(fl)
+	# preallocate the arrays
+	Tmin = np.ndarray((len(dates),r,t),dtype=np.float16)
+	Tmax = np.ndarray((len(dates),r,t),dtype=np.float16)
+	Prec = np.ndarray((len(dates),r,t),dtype=np.float16)
 
-ct = 0 # indexer for axis 0
-for fl in livneh.files:
-    liv = Dataset(fl)
-    q,w,e = np.array(liv.variables['Tmin']).shape # extract the shape, we are interested in q
+	ct = 0 # indexer for axis 0
+	for fl in livneh.files:
+	    liv = Dataset(fl)
+	    q,w,e = np.array(liv.variables['Tmin']).shape # extract the shape, we are interested in q
 
-    Tmin[ct:(ct+q-1),:,:] =np.array(liv.variables['Tmin'][:,minX:maxX,minY:maxY],dtype=np.float64)
-    Tmax[ct:(ct+q-1),:,:] = np.array(liv.variables['Tmax'][:,minX:maxX,minY:maxY],dtype=np.float64)
-    Prec[ct:(ct+q-1),:,:] = np.array(liv.variables['Prec'][:,minX:maxX,minY:maxY],dtype=np.float64)
-    ct += q # increment the counter
-    
-noData = 1e+20
+	    Tmin[ct:(ct+q),:,:] =np.array(liv.variables['Tmin'][:,minX:maxX,minY:maxY],dtype=np.float16)
+	    Tmax[ct:(ct+q),:,:] = np.array(liv.variables['Tmax'][:,minX:maxX,minY:maxY],dtype=np.float16)
+	    Prec[ct:(ct+q),:,:] = np.array(liv.variables['Prec'][:,minX:maxX,minY:maxY],dtype=np.float16)
+	    ct += q # increment the counter
+	    print(fl)
+	    
+	noData = 1e+20
 
-# handle no data values:
-Tmin[Tmin == noData] = np.NaN
-Tmax[Tmax == noData] = np.NaN
-Prec[Prec == noData] = np.NaN
+	# handle no data values:
+	Tmin[Tmin == noData] = np.NaN
+	Tmax[Tmax == noData] = np.NaN
+	Prec[Prec == noData] = np.NaN
 
+	print('Data Gather Complete.')
+
+	np.savez(outfl,Tmin=Tmin,Tmax=Tmax,Prec=Prec)
+	print('Saving Livneh Regional Data')
+
+else:
+	print('Loading Livneh Regional Data')
+	inDat = np.load(outfl)
+	Tmin = inDat['Tmin']
+	Tmax = inDat['Tmax']
+	Prec = inDat['Prec']
+
+print('Length of gathered data: %s'%len(Prec))
 # now loop through each nhru in the region
 # prepair the output data frame
 out = pd.DataFrame()
@@ -134,6 +152,7 @@ out['day'] = out.index.map(get_day)
 out['hour'] = 0
 out['minute'] = 0
 out['second'] = 0
+#print('Length of output DataFrame: %s'%len(out))
 
 for hru in dat.hru_id_reg: # create space for each HRU
     out['hru_%s'%hru] = -999
@@ -145,24 +164,34 @@ Tminout = out.copy()
 Tmaxout = out.copy()
 numHRU = float(len(dat))
 
+print('Preallocate Complete.')
+print('Length of preallocated DataFrame: %s'%len(Tminout))
+ct = 0
 for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents):
     PrecTmp = Prec[:,x,y]
     TminTmp = Tmin[:,x,y]
     TmaxTmp = Tmax[:,x,y]
     
+    #print('Starting hru: %s'%hru)
+    #print('Input Data Shapes')
+    #print(PrecTmp.shape)
+    #print(TminTmp.shape)
+    #print(TmaxTmp.shape)
+
     n,m,k = PrecTmp.shape
     percents = np.reshape(percents,(1,m,k))
     percents = np.repeat(percents,n,axis=0)
     
-    PrecTmp = np.nansum(PrecTmp * percents,axis=0)
-    TminTmp = np.nansum(TminTmp * percents,axis=0)
-    TmaxTmp = np.nansum(TmaxTmp * percents,axis=0)
+    PrecTmp = np.nansum(PrecTmp * percents,axis=1)
+    TminTmp = np.nansum(TminTmp * percents,axis=1)
+    TmaxTmp = np.nansum(TmaxTmp * percents,axis=1)
     
+    #print('Shape of processed data: %s,%s'%PrecTmp.shape)
     #convert units
     Pout['hru_%s'%hru] = PrecTmp * 0.0393701 # mm >> inches
     Tminout['hru_%s'%hru] = (TminTmp * (9./5.)) + 32 # deg C >> Deg F
     Tmaxout['hru_%s'%hru] = (TmaxTmp * (9./5.)) + 32. # deg C >> Deg F
-    print('Completed %s%'%(ct/numHRU*100.))
+    print('Completed %s percent'%(round((ct/numHRU)*100.,2)))
     ct += 1
 
 # save the data
