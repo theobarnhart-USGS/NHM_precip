@@ -3,11 +3,11 @@
 #SBATCH -n 1            # number of cores needed
 #SBATCH -p normal                         # the partition you want to use, for this case prod is best
 #SBATCH --account=wymtwsc        # your account
-#SBATCH --time=10:00:00           # Overestimated guess at time, the process will be cancelled at the time limit (this case 6 hours), prod allows 21 day jobs.
+#SBATCH --time=55:00:00           # Overestimated guess at time, the process will be cancelled at the time limit (this case 6 hours), prod allows 21 day jobs.
 #SBATCH --mail-type=ALL         # Send email on all events
 #SBATCH --mail-user=tbarnhart@usgs.gov
 #SBATCH  -o %j.log                    # Sets output log file to %j ( will be the jobId returned by sbatch)  
-#SBATCH --mem=10000            #memory in MB 
+#SBATCH --mem=20000            #memory in MB 
 
 echo Starting: $1
 
@@ -22,4 +22,4 @@ module load python/anaconda3
 source activate py36 
 
 # call the script and pass the region argument
-srun python ~/projects/NHM_precipitation/hpc_scripts/aggregate_livneh2016.py $reg
+srun python -u  ~/projects/NHM_precipitation/hpc_scripts/aggregate_livneh2016.py $reg
