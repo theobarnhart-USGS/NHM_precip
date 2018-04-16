@@ -9,6 +9,14 @@ import sys
 import os.path
 
 reg = sys.argv[1]
+#reg = '02' # for testing
+
+def fix_length(x):
+    xnew = []
+    for xx in x:
+        if len(xx) > 0:
+            xnew.append(xx)
+    return xnew
 
 def get_year(index):
     return index.year
@@ -38,6 +46,11 @@ def get_keys(df,idxraster=[]):
         xx,yy = np.where(idxraster == cells[0])
         x.append(xx)
         y.append(yy)
+
+    x = fix_length(x)
+    y = fix_length(y)
+
+    assert len(x) == len(y),'Index Lengths Unequal'
     
     return x,y
 
@@ -164,10 +177,13 @@ Tminout = out.copy()
 Tmaxout = out.copy()
 numHRU = float(len(dat))
 
+# fix index lists with blank 
+
 print('Preallocate Complete.')
 print('Length of preallocated DataFrame: %s'%len(Tminout))
 ct = 0
 for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents):
+    print('%s,%s'%(len(x),len(y)))
     PrecTmp = Prec[:,x,y]
     TminTmp = Tmin[:,x,y]
     TmaxTmp = Tmax[:,x,y]
