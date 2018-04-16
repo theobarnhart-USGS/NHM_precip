@@ -11,14 +11,16 @@ import os.path
 reg = sys.argv[1]
 #reg = '02' # for testing
 
-def fix_length(x,y):
+def fix_length(x,y,percents):
     xnew = []
     ynew = []
-    for xx,yy in zip(x,y):
+    percentsnew = []
+    for xx,yy,pp in zip(x,y,percents):
         if (len(xx) > 0) and (len(yy) > 0):
             xnew.append(xx)
             ynew.append(yy)
-    return xnew,ynew
+            percentsnew.append(pp)
+    return xnew,ynew,percentsnew
 
 def get_year(index):
     return index.year
@@ -34,6 +36,7 @@ def get_keys(df,idxraster=[]):
     Find index raster cell index values.
     '''
     cells = df.cells
+    percents = df.percents
     
     x = []
     y = []
@@ -49,12 +52,11 @@ def get_keys(df,idxraster=[]):
         x.append(xx)
         y.append(yy)
 
-    x = fix_length(x)
-    y = fix_length(y)
+    x,y,percents = fix_length(x,y,percents)
 
     assert len(x) == len(y),'Index Lengths Unequal'
     
-    return x,y
+    return x,y,percents
 
 ## generate the time aspect of the data
 # the Livneh data start at 1915 and end 2015
@@ -69,9 +71,10 @@ dat = pd.read_pickle('../data/livneh_huc_%s_cell_contrib.pcl'%reg)
 
 # get the index values of each cell
 res = dat.apply(get_keys,axis=1,idxraster=idxRast)
-x,y = zip(*res)
+x,y,percents = zip(*res)
 dat['x'] = x
 dat['y'] = y
+dat['percents'] = percents
 
 # now compute some min and max index values and subset the index raster
 xs = []
@@ -97,10 +100,11 @@ r,t = idxLocal.shape
 
 res = dat.apply(get_keys,axis=1,idxraster = idxLocal) # recompute local indices to subset the data stack.
 
-x,y = zip(*res)
+x,y,percents = zip(*res)
 
 dat['x_local'] = x
 dat['y_local'] = y
+dat['percents'] = percents
 
 def get_fractional_date(fl):
     yearMonth = fl.split('.')[-2]
@@ -185,7 +189,7 @@ print('Preallocate Complete.')
 print('Length of preallocated DataFrame: %s'%len(Tminout))
 ct = 0
 for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents):
-    print('%s,%s'%(len(x),len(y)))
+    #print('%s,%s'%(len(x),len(y)))
     PrecTmp = Prec[:,x,y]
     TminTmp = Tmin[:,x,y]
     TmaxTmp = Tmax[:,x,y]
