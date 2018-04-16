@@ -11,12 +11,14 @@ import os.path
 reg = sys.argv[1]
 #reg = '02' # for testing
 
-def fix_length(x):
+def fix_length(x,y):
     xnew = []
-    for xx in x:
-        if len(xx) > 0:
+    ynew = []
+    for xx,yy in zip(x,y):
+        if (len(xx) > 0) and (len(yy) > 0):
             xnew.append(xx)
-    return xnew
+            ynew.append(yy)
+    return xnew,ynew
 
 def get_year(index):
     return index.year
