@@ -251,7 +251,7 @@ def generate_output(fl,contribFile=[]):
     print('Region: %s interpolation complete'%reg)
     
     # save the output
-    out.to_csv('../hru_%s_stage_4_precip.cbh'%reg,sep=' ',header=False,index=False,float_format='%.2f',na_rep='-999')
+    out.to_csv('../hru_%s_stage_4_precip.cbh'%reg,sep=' ',header=False,index=False,float_format='%.3f',na_rep='-999')
     out.to_pickle('../hru_%s_stage_4_precip.pcl'%reg)
     
     PP.to_csv('../hru_%s_stage_4_precip_prop.cbh'%reg,sep=' ',header=False,index=False,float_format='%.2f',na_rep='-999')
