@@ -144,14 +144,7 @@ def compute_precip(df,datetime=[],rast=[],out=[],PP=[]):
     precip = rast[np.array(df.cells,dtype=np.int)] # pull out the cells from the hrap grid
     percents = np.array(df.percents) # create an array of the percents that each cell contributes to the hru
     
-    # compute weighted average precipitation following:
-    # https://github.com/theobarnhart/WSC_WRF/blob/master/extract_watershed_data_HW.ipynb
-    # at commit: b06e99fdf404536af2c07766a53c3759763c9845
-
-    weights = np.ndarray(len(percents),dtype=np.float64) # preallocate the weights matrix
-    weights[:] = 1./len(percents) # fill the weights with 1/n where n is the number of cells feeding into the hru
-    weights = weights * percents # change the weights to 
-    weighted_precip = np.sum(precip*weights) # precip in mm, propogate NaNs
+    weighted_precip = np.sum(precip*percents) # precip in mm, propogate NaNs
 
     weighted_precip *= 0.0393701 # mm >> inches
 
