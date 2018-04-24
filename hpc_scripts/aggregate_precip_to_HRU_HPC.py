@@ -154,7 +154,7 @@ def compute_precip(df,datetime=[],rast=[],out=[],PP=[]):
     precip[precip>0] = 1. # set the precip vector values based on internal values
     precip[precip<=0] = 0.
 
-    propP = np.nansum(precip * weights) / len(percents) # compute area weighted proportion of HRU with precipitation.
+    propP = np.nansum(precip * percents) / len(percents) # compute area weighted proportion of HRU with precipitation.
 
     # save the precip presence data
     PP.loc[datetime,'hru_%s'%df.hru_id_reg] = propP
