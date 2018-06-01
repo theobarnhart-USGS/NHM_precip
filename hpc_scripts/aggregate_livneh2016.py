@@ -1,19 +1,26 @@
 
-# coding: utf-8
-
-# In[29]:
-
-
 import pandas as pd
 import geopandas as gpd
 import numpy as np
 import glob as glob
 from netCDF4 import Dataset
 import rasterio as rs
-import progressbar as pb
 import sys
+import os.path
 
 reg = sys.argv[1]
+#reg = '02' # for testing
+
+def fix_length(x,y,percents):
+    xnew = []
+    ynew = []
+    percentsnew = []
+    for xx,yy,pp in zip(x,y,percents):
+        if (len(xx) > 0) and (len(yy) > 0):
+            xnew.append(xx)
+            ynew.append(yy)
+            percentsnew.append(pp)
+    return xnew,ynew,percentsnew
 
 def get_year(index):
     return index.year
@@ -29,6 +36,7 @@ def get_keys(df,idxraster=[]):
     Find index raster cell index values.
     '''
     cells = df.cells
+    percents = df.percents
     
     x = []
     y = []
@@ -43,12 +51,12 @@ def get_keys(df,idxraster=[]):
         xx,yy = np.where(idxraster == cells[0])
         x.append(xx)
         y.append(yy)
+
+    x,y,percents = fix_length(x,y,percents)
+
+    assert len(x) == len(y),'Index Lengths Unequal'
     
-    return x,y
-
-
-# In[7]:
-
+    return x,y,percents
 
 ## generate the time aspect of the data
 # the Livneh data start at 1915 and end 2015
@@ -56,20 +64,17 @@ def get_keys(df,idxraster=[]):
 dates = pd.date_range(start = '1915-01-01', end = '2015-12-31', freq = 'D')
 #months = pd.date_range(start = '1915-01', end = '2015-12', freq = 'M')
 
-
-# In[47]:
-
-
-with rs.open('./data/livneh_idx.tiff') as ds:
+with rs.open('../data/livneh_idx.tiff') as ds:
     idxRast = np.flipud(ds.read(1)) # flip this to deal with the change from tiff to array
 
-dat = pd.read_pickle('./data/livneh_huc_%s_cell_contrib.pcl'%reg)
+dat = pd.read_pickle('../data/livneh_huc_%s_cell_contrib.pcl'%reg)
 
 # get the index values of each cell
 res = dat.apply(get_keys,axis=1,idxraster=idxRast)
-x,y = zip(*res)
+x,y,percents = zip(*res)
 dat['x'] = x
 dat['y'] = y
+dat['percents'] = percents
 
 # now compute some min and max index values and subset the index raster
 xs = []
@@ -91,16 +96,15 @@ extents = [minX,maxX,minY,maxY]
 
 idxLocal = idxRast[minX:maxX,minY:maxY] # subset the index raster
 
+r,t = idxLocal.shape
+
 res = dat.apply(get_keys,axis=1,idxraster = idxLocal) # recompute local indices to subset the data stack.
 
-x,y = zip(*res)
+x,y,percents = zip(*res)
 
 dat['x_local'] = x
 dat['y_local'] = y
-
-
-# In[71]:
-
+dat['percents'] = percents
 
 def get_fractional_date(fl):
     yearMonth = fl.split('.')[-2]
@@ -109,40 +113,53 @@ def get_fractional_date(fl):
     
     return year + (month/12.)
 
-
-# In[76]:
-
-
+# check if the livneh data has already been gathered
+gatheredDatFL = '/home/tbarnhart/projects/NHM_precipitation/data/livneh_regional/region_%s.npz'%reg
+outfl = '/home/tbarnhart/projects/NHM_precipitation/data/livneh_regional/region_%s.npz'%reg
+if os.path.isfile(gatheredDatFL) == False: 
 # create and sort a data frame to ensure that files are read in the correct order.
-livneh = pd.DataFrame()
-livneh['files'] = glob.glob('/home/tbarnhart/projects/NHM_precipitation/data/livneh2016/*.nc')
-livneh['date'] = livneh.files.map(get_fractional_date)
-livneh.sort_values('date',inplace=True,ascending=True)
+	livneh = pd.DataFrame()
+	livneh['files'] = glob.glob('/home/tbarnhart/projects/NHM_precipitation/data/livneh2016/*.nc')
+	livneh['date'] = livneh.files.map(get_fractional_date)
+	livneh.sort_values('date',inplace=True,ascending=True)
+	livneh.reset_index()
 
-livneh.reset_index()
-fl = livneh.files[0]
-liv = Dataset(fl)
-Tmin = np.array(liv.variables['Tmin'][:,minX:maxX,minY:maxY],dtype=np.float64)
-Tmax = np.array(liv.variables['Tmax'][:,minX:maxX,minY:maxY],dtype=np.float64)
-Prec = np.array(liv.variables['Prec'][:,minX:maxX,minY:maxY],dtype=np.float64)
+	# preallocate the arrays
+	Tmin = np.ndarray((len(dates),r,t),dtype=np.float16)
+	Tmax = np.ndarray((len(dates),r,t),dtype=np.float16)
+	Prec = np.ndarray((len(dates),r,t),dtype=np.float16)
 
-for fl in livneh.files[1:]:
-    liv = Dataset(fl)
-    Tmin = np.concatenate((Tmin,np.array(liv.variables['Tmin'][:,minX:maxX,minY:maxY],dtype=np.float64)),axis=0)
-    Tmax = np.concatenate((Tmax,np.array(liv.variables['Tmax'][:,minX:maxX,minY:maxY],dtype=np.float64)),axis=0)
-    Prec = np.concatenate((Prec,np.array(liv.variables['Prec'][:,minX:maxX,minY:maxY],dtype=np.float64)),axis=0)
-    
-noData = 1e+20
+	ct = 0 # indexer for axis 0
+	for fl in livneh.files:
+	    liv = Dataset(fl)
+	    q,w,e = np.array(liv.variables['Tmin']).shape # extract the shape, we are interested in q
 
-# handle no data values:
-Tmin[Tmin == noData] = np.NaN
-Tmax[Tmax == noData] = np.NaN
-Prec[Prec == noData] = np.NaN
+	    Tmin[ct:(ct+q),:,:] =np.array(liv.variables['Tmin'][:,minX:maxX,minY:maxY],dtype=np.float16)
+	    Tmax[ct:(ct+q),:,:] = np.array(liv.variables['Tmax'][:,minX:maxX,minY:maxY],dtype=np.float16)
+	    Prec[ct:(ct+q),:,:] = np.array(liv.variables['Prec'][:,minX:maxX,minY:maxY],dtype=np.float16)
+	    ct += q # increment the counter
+	    print(fl)
+	    
+	noData = 1e+20
 
+	# handle no data values:
+	Tmin[Tmin == noData] = np.NaN
+	Tmax[Tmax == noData] = np.NaN
+	Prec[Prec == noData] = np.NaN
 
-# In[72]:
+	print('Data Gather Complete.')
 
+	np.savez(outfl,Tmin=Tmin,Tmax=Tmax,Prec=Prec)
+	print('Saving Livneh Regional Data')
 
+else:
+	print('Loading Livneh Regional Data')
+	inDat = np.load(outfl)
+	Tmin = inDat['Tmin']
+	Tmax = inDat['Tmax']
+	Prec = inDat['Prec']
+
+print('Length of gathered data: %s'%len(Prec))
 # now loop through each nhru in the region
 # prepair the output data frame
 out = pd.DataFrame()
@@ -154,6 +171,7 @@ out['day'] = out.index.map(get_day)
 out['hour'] = 0
 out['minute'] = 0
 out['second'] = 0
+#print('Length of output DataFrame: %s'%len(out))
 
 for hru in dat.hru_id_reg: # create space for each HRU
     out['hru_%s'%hru] = -999
@@ -163,35 +181,42 @@ del out['datetime'] # clean up
 Pout = out.copy()
 Tminout = out.copy()
 Tmaxout = out.copy()
+numHRU = float(len(dat))
 
+# fix index lists with blank 
 
-# In[33]:
-
-
+print('Preallocate Complete.')
+print('Length of preallocated DataFrame: %s'%len(Tminout))
+ct = 0
 for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents):
+    #print('%s,%s'%(len(x),len(y)))
     PrecTmp = Prec[:,x,y]
     TminTmp = Tmin[:,x,y]
     TmaxTmp = Tmax[:,x,y]
     
+    #print('Starting hru: %s'%hru)
+    #print('Input Data Shapes')
+    #print(PrecTmp.shape)
+    #print(TminTmp.shape)
+    #print(TmaxTmp.shape)
+
     n,m,k = PrecTmp.shape
     percents = np.reshape(percents,(1,m,k))
     percents = np.repeat(percents,n,axis=0)
     
-    PrecTmp = np.nansum(PrecTmp * percents,axis=0)
-    TminTmp = np.nansum(TminTmp * percents,axis=0)
-    TmaxTmp = np.nansum(TmaxTmp * percents,axis=0)
+    PrecTmp = np.nansum(PrecTmp * percents,axis=1)
+    TminTmp = np.nansum(TminTmp * percents,axis=1)
+    TmaxTmp = np.nansum(TmaxTmp * percents,axis=1)
     
+    #print('Shape of processed data: %s,%s'%PrecTmp.shape)
     #convert units
     Pout['hru_%s'%hru] = PrecTmp * 0.0393701 # mm >> inches
     Tminout['hru_%s'%hru] = (TminTmp * (9./5.)) + 32 # deg C >> Deg F
     Tmaxout['hru_%s'%hru] = (TmaxTmp * (9./5.)) + 32. # deg C >> Deg F
-
-
-# In[ ]:
-
+    print('Completed %s percent'%(round((ct/numHRU)*100.,2)))
+    ct += 1
 
 # save the data
 Pout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/livneh_Prec_reg_%s.pcl'%reg)
 Tminout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/livneh_Tmin_reg_%s.pcl'%reg)
 Tmaxout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/livneh_Tmax_reg_%s.pcl'%reg)
-

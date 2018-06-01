@@ -144,14 +144,7 @@ def compute_precip(df,datetime=[],rast=[],out=[],PP=[]):
     precip = rast[np.array(df.cells,dtype=np.int)] # pull out the cells from the hrap grid
     percents = np.array(df.percents) # create an array of the percents that each cell contributes to the hru
     
-    # compute weighted average precipitation following:
-    # https://github.com/theobarnhart/WSC_WRF/blob/master/extract_watershed_data_HW.ipynb
-    # at commit: b06e99fdf404536af2c07766a53c3759763c9845
-
-    weights = np.ndarray(len(percents),dtype=np.float64) # preallocate the weights matrix
-    weights[:] = 1./len(percents) # fill the weights with 1/n where n is the number of cells feeding into the hru
-    weights = weights * percents # change the weights to 
-    weighted_precip = np.sum(precip*weights) # precip in mm, propogate NaNs
+    weighted_precip = np.sum(precip*percents) # precip in mm, propogate NaNs
 
     weighted_precip *= 0.0393701 # mm >> inches
 
@@ -161,7 +154,7 @@ def compute_precip(df,datetime=[],rast=[],out=[],PP=[]):
     precip[precip>0] = 1. # set the precip vector values based on internal values
     precip[precip<=0] = 0.
 
-    propP = np.nansum(precip * weights) / len(percents) # compute area weighted proportion of HRU with precipitation.
+    propP = np.nansum(precip * percents) / len(percents) # compute area weighted proportion of HRU with precipitation.
 
     # save the precip presence data
     PP.loc[datetime,'hru_%s'%df.hru_id_reg] = propP
@@ -258,7 +251,7 @@ def generate_output(fl,contribFile=[]):
     print('Region: %s interpolation complete'%reg)
     
     # save the output
-    out.to_csv('../hru_%s_stage_4_precip.cbh'%reg,sep=' ',header=False,index=False,float_format='%.2f',na_rep='-999')
+    out.to_csv('../hru_%s_stage_4_precip.cbh'%reg,sep=' ',header=False,index=False,float_format='%.3f',na_rep='-999')
     out.to_pickle('../hru_%s_stage_4_precip.pcl'%reg)
     
     PP.to_csv('../hru_%s_stage_4_precip_prop.cbh'%reg,sep=' ',header=False,index=False,float_format='%.2f',na_rep='-999')

@@ -11,4 +11,4 @@
 
 echo Starting: $1
 
-srun sh ~/projects/NHM_precipitation/run_aggregation_HPC.sh $1
+srun sh ~/projects/NHM_precipitation/hpc_scripts/run_aggregation_HPC.sh $1
