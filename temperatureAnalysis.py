@@ -1,10 +1,13 @@
+from objectiveFunctions import *
+from temperatureComparisonFxns import *
+
 regions = ['18', '01', '03', '08', '04', '15', '10L', '14', '05', '07', '12','11', '16', '06', '10U', '17', '02', '09', '13']
 forcingTypes = ['tmin','tmax']
 forcingSets = ['daymet','maurer','idaho']
 
 for region in regions: # iterate through regions
     for forcingType in forcingTypes: # iterate through tmin and tmax
-        livenh = loadDF(forcingSet='livneh',region=region,forcingType=forcingType)
+        livneh = loadDF(forcingSet='livneh',region=region,forcingType=forcingType)
         for forcingSet in forcingSets: # iterate through datasets, maurer etc.
 
             # load datasets
@@ -20,7 +23,7 @@ for region in regions: # iterate through regions
             assert df1.shape[1] == df2.shape[1]
 
             # compute 
-            computeMetrics(livneh,daymet,label='livneh2%s'%forcingSet,forcingType=forcingType,region=region,save=True)
+            computeMetrics(df1,df2,label='livneh2%s'%forcingSet,forcingType=forcingType,region=region,save=True)
             
             # clean up 
             del df1

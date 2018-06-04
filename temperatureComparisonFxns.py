@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import glob
+from objectiveFunctions import *
 
 def extractType(fl): return fl.split('_')[-1].split('.')[0]
 def extractRegion(fl): return fl.split('/')[-1].split('_')[0].split('r')[-1]
