@@ -57,3 +57,14 @@ def pearsonR(x,y):
 
     R,p = sps.pearsonr(x,y)
     return R
+
+def pairedTtest(x,y):
+    # http://iaingallagher.tumblr.com/post/50980987285/t-tests-in-python
+    
+    n = len(x)
+    m = len(y)
+
+    if np.sum(np.isnan(x)) == n or np.sum(np.isnan(y)) == m: return np.NaN
+
+    testStat,pVal = sps.ttest_rel(x,y)
+    return pVal

@@ -47,6 +47,7 @@ def computeMetrics(df1,df2,label = None, save=False, region = None, forcingType 
     RMSEres = []
     NSEres = []
     pearsonsRres = []
+    ttestPvals = []
 
     for hru in df1.columns:
         x = df1[hru].values
@@ -57,7 +58,8 @@ def computeMetrics(df1,df2,label = None, save=False, region = None, forcingType 
         RMSEres.append(RMSE(x,y))
         NSEres.append(NSE(x,y))
         pearsonsRres.append(pearsonR(x,y))
-        
+        ttestPvals.append(pairedTtest(x,y))
+
     results = pd.DataFrame()
     results['HRU'] = np.arange(1,len(df1.columns)+1)
     results['r2'] = r2res
