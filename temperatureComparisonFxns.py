@@ -67,6 +67,7 @@ def computeMetrics(df1,df2,label = None, save=False, region = None, forcingType 
     results['RMSE'] = RMSEres
     results['NSE'] = NSEres
     results['R'] = pearsonsRres
+    results['pVal'] = ttestPvals
     
     if save: results.to_pickle('./data/forcing_sets/r%s_%s_%s.pcl'%(region,forcingType,label))
 
