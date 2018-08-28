@@ -14,7 +14,7 @@ reg = sys.argv[1] # extract the region from the wrapper function
 
 
 def make_outpath(df):
-    outpath = './AEA_tiffs/HUC_%s_hruID_%s.tiff'%(df.region,df.hruID)
+    outpath = '~/projects/NHM_precipitation/data/spherical_tiffs/HUC_%s_hruID_%s.tiff'%(df.region,df.hruID)
     return outpath
 
 def clip_raster(df):
@@ -24,7 +24,7 @@ def clip_raster(df):
     inpath = df.inpath
     outpath = df.outpath
     
-    cmd = "gdalwarp -tr 476.25 476.25 -cutline %s -cwhere hru_id_reg=%s -crop_to_cutline -overwrite %s %s"%(cutline,
+    cmd = "gdalwarp -tr 0.0125 0.0125 -cutline %s -cwhere hru_id_reg=%s -crop_to_cutline -overwrite %s %s"%(cutline,
         feature,inpath,outpath)
     
     subprocess.call(cmd,shell=True)
@@ -67,7 +67,7 @@ def clip_raster_output(df):
     inpath = df.inpath
     outpath = df.outpath
     
-    cmd = "gdalwarp -tr 476.25 476.25 -cutline %s -cwhere hru_id_reg=%s -crop_to_cutline -overwrite %s %s"%(cutline,
+    cmd = "gdalwarp -tr 0.0125 0.0125 -cutline %s -cwhere hru_id_reg=%s -crop_to_cutline -overwrite %s %s"%(cutline,
         feature,inpath,outpath)
     
     out = subprocess.run(cmd,shell=True,stdout=subprocess.PIPE)
@@ -109,10 +109,10 @@ def check(fl,inpath='tmp'):
 
 # now that all the functions are written...
 fl = '/home/tbarnhart/projects/NHM_precipitation/data/nhru_%s_clean.shp'%reg
-inpath = './hrap_grid_AEA_idx_476_25.tiff'
+inpath = '~/projects/NHM_precipitation/data/NLDASv2_idx_0125.tiff'
 runClip(fl,inpath=inpath) # crop the files
 missing = check(fl,inpath=inpath) # figure out whats missing
-missing.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/missing_region_%s.pcl'%reg) # save the file
+missing.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/missing_NLDASv2_clip_region_%s.pcl'%reg) # save the file
 
 #files = glob.glob('~/projects/NHM_precipitation/data/nhrus/clean_AEA/*.shp') # load the files
 #files = pd.DataFrame({'file':files})
