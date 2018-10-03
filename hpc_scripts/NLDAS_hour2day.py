@@ -7,7 +7,7 @@ def convert(date):
     '''
     Function to convert hourly NLDAS tiffs to daily summaries from midnight to 11 pm.
     '''
-    outfl = './data/NLDASv2_TP_daily/LDAS_FORA0125_H.A%s.002.grb.TP.tiff'%(date.strftime('%Y%m%d'))
+    outfl = '../data/NLDASv2_TP_daily/LDAS_FORA0125_H.A%s.002.grb.TP.tiff'%(date.strftime('%Y%m%d'))
     
     if not os.path.isfile(outfl):
 
@@ -17,7 +17,7 @@ def convert(date):
         P = T.copy()
 
         for hr in range(0,24): # create daily data cube.
-            fl = './data/NLDASv2/NLDAS_FORA0125_H.A%s.%s00.002.grb.TP.tiff'%(date.strftime('%Y%m%d'),str(hr).zfill(2))
+            fl = '../data/NLDASv2_TP/NLDAS_FORA0125_H.A%s.%s00.002.grb.TP.tiff'%(date.strftime('%Y%m%d'),str(hr).zfill(2))
             #print(fl)
             with rs.open(fl) as ds:
                 T[hr,:,:] = ds.read(1)
@@ -67,7 +67,7 @@ def daterange(strtDate,endDate,fmt):
     strtDate = datetime.datetime.strptime(strtDate,fmt)
     endDate = datetime.datetime.strptime(endDate,fmt)
 
-    step = datetime.datetime.timedelta(days=1)
+    step = datetime.timedelta(days=1)
 
     dates = []
 
