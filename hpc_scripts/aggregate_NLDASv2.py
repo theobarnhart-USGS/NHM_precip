@@ -205,11 +205,11 @@ numHRU = float(len(dat))
 print('Preallocate Complete.')
 print('Length of preallocated DataFrame: %s'%len(Tout))
 ct = 0
-
+ct2 = 0
 # iterate through each hru and process the whole stack!
 for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents):
     #print('%s,%s'%(len(x),len(y)))
-    PrecTmp = Prec[:,x,y]
+    PrecTmp = Prec[:,x,y] # pull out the subsets from each grid
     Ttmp = T[:,x,y]
     
     #print('Starting hru: %s'%hru)
@@ -218,20 +218,28 @@ for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents)
     #print(Ttmp.shape)
     #print(TmaxTmp.shape)
 
-    n,m,k = PrecTmp.shape
-    percents = np.reshape(percents,(1,m,k))
-    percents = np.repeat(percents,n,axis=0)
-    
-    PrecTmp = np.nansum(PrecTmp * percents,axis=1)
-    Ttmp = np.nansum(Ttmp * percents,axis=1)
-    
-    #print('Shape of processed data: %s,%s'%PrecTmp.shape)
-    #convert units
-    Pout['hru_%s'%hru] = PrecTmp * 0.0393701 # mm >> inches
-    Tout['hru_%s'%hru] = (Ttmp * (9./5.)) + 32 # deg C >> Deg F
+    try:
+        n,m,k = PrecTmp.shape
+        percents = np.reshape(percents,(1,m,k))
+        percents = np.repeat(percents,n,axis=0)
+        
+        PrecTmp = np.nansum(PrecTmp * percents,axis=1)
+        Ttmp = np.nansum(Ttmp * percents,axis=1)
+        
+        #print('Shape of processed data: %s,%s'%PrecTmp.shape)
+        #convert units
+        Pout['hru_%s'%hru] = PrecTmp * 0.0393701 # mm >> inches
+        Tout['hru_%s'%hru] = (Ttmp * (9./5.)) + 32 # deg C >> Deg F
+    else:
+        print('HRU %s Error.'%hru)
+        continue
 
-    print('Completed %s percent'%(round((ct/numHRU)*100.,2)))
+    if ct2 == 100:
+        print('Completed %s percent'%(round((ct/numHRU)*100.,2)))
+        ct2 = 0
+
     ct += 1
+    ct2 += 1
 
 # save the data
 Pout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_P_hourly_reg_%s.pcl'%reg)
