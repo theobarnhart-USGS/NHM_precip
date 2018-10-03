@@ -1,4 +1,3 @@
-
 import pandas as pd
 import geopandas as gpd
 import numpy as np
@@ -12,6 +11,7 @@ reg = sys.argv[1]
 #reg = '02' # for testing
 
 def fix_length(x,y,percents):
+
     xnew = []
     ynew = []
     percentsnew = []
@@ -59,9 +59,9 @@ def get_keys(df,idxraster=[]):
     return x,y,percents
 
 ## generate the time aspect of the data
-# the Livneh data start at 1915 and end 2015
+# the NLDAS data start at 1979-01-01 13:00 and end 2017-12-31 23:00
 
-dates = pd.date_range(start = '1915-01-01', end = '2015-12-31', freq = 'D')
+dates = pd.date_range(start = '1979-01-01 13:00', end = '2017-12-31 23:00', freq = 'H')
 #months = pd.date_range(start = '1915-01', end = '2015-12', freq = 'M')
 
 with rs.open('../data/livneh_idx.tiff') as ds:
