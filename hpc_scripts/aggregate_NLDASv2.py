@@ -230,9 +230,8 @@ for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents)
         #convert units
         Pout['hru_%s'%hru] = PrecTmp * 0.0393701 # mm >> inches
         Tout['hru_%s'%hru] = (Ttmp * (9./5.)) + 32 # deg C >> Deg F
-    else:
+    except:
         print('HRU %s Error.'%hru)
-        continue
 
     if ct2 == 100:
         print('Completed %s percent'%(round((ct/numHRU)*100.,2)))
