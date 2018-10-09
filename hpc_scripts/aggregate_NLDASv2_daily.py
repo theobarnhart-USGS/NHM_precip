@@ -141,7 +141,7 @@ if os.path.isfile(gatheredDatFL) == False:
 	# preallocate the arrays
 	Tmin = np.ndarray((lenDays,r,t),dtype=np.float16)
 	Tmax = Tmin.copy()
-    Prec = Tmin.copy()
+	Prec = Tmin.copy()
     
 	ct2 = 0
 	ct = 0 # indexer for axis 0
