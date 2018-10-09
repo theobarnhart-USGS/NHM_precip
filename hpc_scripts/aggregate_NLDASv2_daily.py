@@ -66,7 +66,7 @@ def get_keys(df,idxraster=[]):
 ## generate the time aspect of the data
 # the Livneh data start at 1915 and end 2015
 
-dates = pd.date_range(start = '1979-01-01 13:00', end = '2017-12-31 23:00', freq = 'H')
+dates = pd.date_range(start = '1979-01-02', end = '2017-12-31', freq = 'D')
 #months = pd.date_range(start = '1915-01', end = '2015-12', freq = 'M')
 
 with rs.open('../data/NLDASv2_idx_125.tiff') as ds:
@@ -112,50 +112,50 @@ dat['y_local'] = y
 dat['percents'] = percents
 
 def get_fractional_date(fl): # update for livneh
-    yearMonthDay = fl.split('.')[-6].split('A')[-1]
-    hourMinute = fl.split('.')[-5]
+    yearMonthDay = fl.split('.')[-5].split('A')[-1]
 
     year = int(yearMonthDay[:4])
     month = int(yearMonthDay[4:6])
     day = int(yearMonthDay[6:])
-    hour = int(hourMinute[:2])
 
-    dt = datetime.datetime(year,month,day,hour)
+    dt = datetime.datetime(year,month,day)
 
     doy = float(dt.strftime('%j'))
 
-    fracDay = float(float(dt.strftime('%H'))/24.) # compute fractional hour
-    fracYear = (doy + fracDay)/366. # compute fractional year
+    fracYear = doy/366. # compute fractional year
 
     return float(year) + fracYear # return year plus the fraction of the year
 
 # check if the livneh data has already been gathered
-gatheredDatFL = '/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_regional/region_%s.npz'%reg
-outfl = '/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_regional/region_%s.npz'%reg
+gatheredDatFL = '/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_regional/region_%s_daily.npz'%reg
+outfl = '/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_regional/region_%s_daily.npz'%reg
 if os.path.isfile(gatheredDatFL) == False: 
 # create and sort a data frame to ensure that files are read in the correct order.
 	livneh = pd.DataFrame()
-	livneh['files'] = glob.glob('/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_TP/*.tiff')
+	livneh['files'] = glob.glob('/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_TP_daily/*.tiff')
 	livneh['date'] = livneh.files.map(get_fractional_date)
 	livneh.sort_values('date',inplace=True,ascending=True)
 	livneh.reset_index()
 	lenDays = len(dates)
     
 	# preallocate the arrays
-	T = np.ndarray((lenDays,r,t),dtype=np.float16)
-	Prec = np.ndarray((lenDays,r,t),dtype=np.float16)
+	Tmin = np.ndarray((lenDays,r,t),dtype=np.float16)
+	Tmax = Tmin.copy()
+    Prec = Tmin.copy()
     
 	ct2 = 0
 	ct = 0 # indexer for axis 0
 	for fl in livneh.files:
 	    ds = rs.open(fl)
 
-	    T[ct,:,:] =np.array(ds.read(1)[minX:maxX,minY:maxY],dtype=np.float16)
-	    Prec[ct,:,:] = np.array(ds.read(2)[minX:maxX,minY:maxY],dtype=np.float16)
+        # get bands from NLDAS_hour2day.py
+	    Tmin[ct,:,:] =np.array(ds.read(1)[minX:maxX,minY:maxY],dtype=np.float16)
+	    Tmax[ct,:,:] =np.array(ds.read(2)[minX:maxX,minY:maxY],dtype=np.float16)
+        Prec[ct,:,:] = np.array(ds.read(4)[minX:maxX,minY:maxY],dtype=np.float16)
 	    ct += 1 # increment the counter
 	    ct2 += 1 # increment 2nd counter
 
-	    if ct2 == 240:
+	    if ct2 == 100:
 	    	print(fl)
 	    	ct2 = 0
 	    #print(fl)
@@ -163,19 +163,22 @@ if os.path.isfile(gatheredDatFL) == False:
 	noData = 9999
 
 	# handle no data values:
-	T[T == noData] = np.NaN
-	Prec[Prec == noData] = np.NaN
+	Tmin[Tmin == noData] = np.NaN
+    Tmax[Tmax == noData] = np.NaN
+ 	Prec[Prec == noData] = np.NaN
 
 	print('Data Gather Complete.')
 
-	np.savez(outfl,T=T,Prec=Prec)
+	np.savez(outfl,Tmin=Tmin,Tmax=Tmax,Prec=Prec)
 	print('Saving NLDASv2 Regional Data')
 
 else:
 	print('Loading NLDASv2 Regional Data')
 	inDat = np.load(outfl)
-	T = inDat['T']
+	Tmin = inDat['Tmin']
+    Tmax = inDat['Tmax']
 	Prec = inDat['Prec']
+    del inDat # clean up
 
 print('Length of gathered data: %s'%len(Prec))
 # now loop through each nhru in the region
@@ -186,7 +189,7 @@ out.index = pd.DatetimeIndex(out.datetime)
 out['year'] = out.index.map(get_year)
 out['month'] = out.index.map(get_month)
 out['day'] = out.index.map(get_day)
-out['hour'] = out.index.map(get_hour)
+out['hour'] = 0
 out['minute'] = 0
 out['second'] = 0
 #print('Length of output DataFrame: %s'%len(out))
@@ -197,26 +200,23 @@ for hru in dat.hru_id_reg: # create space for each HRU
 del out['datetime'] # clean up
 
 Pout = out.copy()
-Tout = out.copy()
+del out
+Tminout = Pout.copy()
+Tmaxout = Pout.copy()
 numHRU = float(len(dat))
 
 # fix index lists with blank 
 
 print('Preallocate Complete.')
-print('Length of preallocated DataFrame: %s'%len(Tout))
+print('Length of preallocated DataFrame: %s'%len(Tminout))
 ct = 0
 ct2 = 0
 # iterate through each hru and process the whole stack!
 for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents):
     #print('%s,%s'%(len(x),len(y)))
     PrecTmp = Prec[:,x,y] # pull out the subsets from each grid
-    Ttmp = T[:,x,y]
-    
-    #print('Starting hru: %s'%hru)
-    #print('Input Data Shapes')
-    #print(PrecTmp.shape)
-    #print(Ttmp.shape)
-    #print(TmaxTmp.shape)
+    TminTmp = Tmin[:,x,y]
+    TmaxTmp = Tmax[:,x,y]
 
     try:
         n,m,k = PrecTmp.shape
@@ -224,12 +224,13 @@ for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents)
         percents = np.repeat(percents,n,axis=0)
         
         PrecTmp = np.nansum(PrecTmp * percents,axis=1)
-        Ttmp = np.nansum(Ttmp * percents,axis=1)
-        
+        TminTmp = np.nansum(TminTmp * percents,axis=1)
+        TmaxTmp = np.nansum(TmaxTmp * percents,axis=1)
         #print('Shape of processed data: %s,%s'%PrecTmp.shape)
         #convert units
         Pout['hru_%s'%hru] = PrecTmp * 0.0393701 # mm >> inches
-        Tout['hru_%s'%hru] = (Ttmp * (9./5.)) + 32 # deg C >> Deg F
+        Tminout['hru_%s'%hru] = (TminTmp * (9./5.)) + 32 # deg C >> Deg F
+        Tmaxout['hru_%s'%hru] = (TmaxTmp * (9./5.)) + 32 # deg C >> Deg F
     except:
         print('HRU %s Error.'%hru)
 
@@ -241,5 +242,6 @@ for hru,x,y,percents in zip(dat.hru_id_reg,dat.x_local,dat.y_local,dat.percents)
     ct2 += 1
 
 # save the data
-Pout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_P_hourly_reg_%s.pcl'%reg)
-Tout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_T_hourly_reg_%s.pcl'%reg)
+Pout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_P_daily_reg_%s.pcl'%reg)
+Tminout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_Tmin_daily_reg_%s.pcl'%reg)
+Tmaxout.to_pickle('/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_Tmax_daily_reg_%s.pcl'%reg)
