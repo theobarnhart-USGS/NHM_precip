@@ -21,4 +21,4 @@ reg=$1 # parse the first argument passed to the wrapper
 source activate py36 
 
 # call the script and pass the region argument
-srun python -u  ~/projects/NHM_precipitation/hpc_scripts/aggregate_NLDASv2_daily.py $reg
+srun python -u  ~/projects/NHM_precipitation/hpc_scripts/aggregate_NLDASv2_hourly.py $reg
