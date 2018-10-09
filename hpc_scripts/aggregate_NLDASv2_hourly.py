@@ -197,7 +197,8 @@ for hru in dat.hru_id_reg: # create space for each HRU
 del out['datetime'] # clean up
 
 Pout = out.copy()
-Tout = out.copy()
+del out # save some RAM
+Tout = Pout.copy()
 numHRU = float(len(dat))
 
 # fix index lists with blank 
