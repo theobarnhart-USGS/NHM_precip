@@ -51,7 +51,7 @@ def runClip(fl,inpath='tmp'):
 def is_file(df):
     hru = df.hruID
     reg = df.region
-    return os.path.isfile('./AEA_tiffs/HUC_%s_hruID_%s.tiff'%(reg,hru))
+    return os.path.isfile('~/projects/NHM_precipitation/data/spherical_tiffs/HUC_%s_hruID_%s.tiff'%(reg,hru))
 
 def parse_out(out):
     out = str(out.stdout)
@@ -108,7 +108,7 @@ def check(fl,inpath='tmp'):
         print('%s Complete!'%reg)
 
 # now that all the functions are written...
-fl = '/home/tbarnhart/projects/NHM_precipitation/data/nhru_%s_clean.shp'%reg
+fl = '~/projects/NHM_precipitation/data/nhrus/clean_AEA/nhru_%s_clean.shp'%reg
 inpath = '~/projects/NHM_precipitation/data/NLDASv2_idx_0125.tiff'
 runClip(fl,inpath=inpath) # crop the files
 missing = check(fl,inpath=inpath) # figure out whats missing
