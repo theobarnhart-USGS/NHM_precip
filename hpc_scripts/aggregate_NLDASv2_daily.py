@@ -151,7 +151,7 @@ if os.path.isfile(gatheredDatFL) == False:
         # get bands from NLDAS_hour2day.py
 	    Tmin[ct,:,:] =np.array(ds.read(1)[minX:maxX,minY:maxY],dtype=np.float16)
 	    Tmax[ct,:,:] =np.array(ds.read(2)[minX:maxX,minY:maxY],dtype=np.float16)
-        Prec[ct,:,:] = np.array(ds.read(4)[minX:maxX,minY:maxY],dtype=np.float16)
+	    Prec[ct,:,:] = np.array(ds.read(4)[minX:maxX,minY:maxY],dtype=np.float16)
 	    ct += 1 # increment the counter
 	    ct2 += 1 # increment 2nd counter
 
@@ -164,8 +164,8 @@ if os.path.isfile(gatheredDatFL) == False:
 
 	# handle no data values:
 	Tmin[Tmin == noData] = np.NaN
-    Tmax[Tmax == noData] = np.NaN
- 	Prec[Prec == noData] = np.NaN
+	Tmax[Tmax == noData] = np.NaN
+	Prec[Prec == noData] = np.NaN
 
 	print('Data Gather Complete.')
 
@@ -176,9 +176,9 @@ else:
 	print('Loading NLDASv2 Regional Data')
 	inDat = np.load(outfl)
 	Tmin = inDat['Tmin']
-    Tmax = inDat['Tmax']
+	Tmax = inDat['Tmax']
 	Prec = inDat['Prec']
-    del inDat # clean up
+	del inDat # clean up
 
 print('Length of gathered data: %s'%len(Prec))
 # now loop through each nhru in the region
