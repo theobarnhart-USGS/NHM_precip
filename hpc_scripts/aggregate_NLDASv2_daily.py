@@ -17,6 +17,7 @@ def fix_length(x,y,percents):
     xnew = []
     ynew = []
     percentsnew = []
+
     for xx,yy,pp in zip(x,y,percents):
         if (len(xx) > 0) and (len(yy) > 0):
             xnew.append(xx)
@@ -47,13 +48,13 @@ def get_keys(df,idxraster=[]):
     y = []
     
     if len(cells) != 1: # if there is more than one cell for the HRU
-        for cell in cells:
-            xx,yy = np.where(idxraster == cell) # find x and y index positions for each index raster cell
+        for cell in cells: # find x and y index positions for each index raster cell
+            xx,yy = np.where(idxraster == cell)
             x.append(xx)
             y.append(yy)
     
     else: # if there is only one cell for the hru
-        xx,yy = np.where(idxraster == cells[0])
+        xx,yy = np.where(idxraster == cells[0]) # find the x and y index positions of that cell
         x.append(xx)
         y.append(yy)
 
@@ -70,7 +71,7 @@ dates = pd.date_range(start = '1979-01-02', end = '2017-12-31', freq = 'D')
 #months = pd.date_range(start = '1915-01', end = '2015-12', freq = 'M')
 
 with rs.open('../data/NLDASv2_idx_125.tiff') as ds:
-    idxRast = np.flipud(ds.read(1)) # flip this to deal with the change from tiff to array
+    idxRast = ds.read(1) # flip this to deal with the change from tiff to array
 
 dat = pd.read_pickle('../data/NLDASv2_huc_%s_cell_contrib.pcl'%reg)
 
@@ -174,11 +175,10 @@ if os.path.isfile(gatheredDatFL) == False:
 
 else:
 	print('Loading NLDASv2 Regional Data')
-	inDat = np.load(outfl)
-	Tmin = inDat['Tmin']
-	Tmax = inDat['Tmax']
-	Prec = inDat['Prec']
-	del inDat # clean up
+	with np.load(outfl) as inDat:
+	   Tmin = inDat['Tmin']
+	   Tmax = inDat['Tmax']
+	   Prec = inDat['Prec']
 
 print('Length of gathered data: %s'%len(Prec))
 # now loop through each nhru in the region
