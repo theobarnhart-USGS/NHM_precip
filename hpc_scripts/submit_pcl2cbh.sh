@@ -21,7 +21,7 @@ source activate py36
 # call the script and pass the region argument
 for var in {'P','Tmin','Tmax'}; do
 	
-	infl=~/projects/NHM_precipitation/data/livneh_${var}_reg_${reg}.pcl
+	infl=~/projects/NHM_precipitation/data/NLDASv2_${var}_daily_reg_${reg}.pcl
 	outfl=/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_daily_cbh/NLDASv2_daily_region_${reg}_${var}.cbh
 	python -u pickle2cbh.py $reg $var $infl $outfl
 done
