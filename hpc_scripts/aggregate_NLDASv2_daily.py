@@ -92,11 +92,14 @@ for x,y in zip(dat.x,dat.y):
 xs = np.unique(xs)
 ys = np.unique(ys)
 
+# buffer for the subset
+buff = 4
+
 # get extents on the local data set needed
-minX = xs.min()
-maxX = xs.max()
-minY = ys.min()
-maxY = ys.max()
+minX = xs.min()-buff
+maxX = xs.max()+buff
+minY = ys.min()-buff
+maxY = ys.max()+buff
 
 extents = [minX,maxX,minY,maxY]
 
@@ -140,7 +143,7 @@ if os.path.isfile(gatheredDatFL) == False:
 	lenDays = len(dates)
     
 	# preallocate the arrays
-	Tmin = np.ndarray((lenDays,r,t),dtype=np.float16)
+	Tmin = np.ndarray((lenDays,r,t),dtype=np.float32)
 	Tmax = Tmin.copy()
 	Prec = Tmin.copy()
     
@@ -150,9 +153,9 @@ if os.path.isfile(gatheredDatFL) == False:
 	    ds = rs.open(fl)
 
         # get bands from NLDAS_hour2day.py
-	    Tmin[ct,:,:] =np.array(ds.read(1)[minX:maxX,minY:maxY],dtype=np.float16)
-	    Tmax[ct,:,:] =np.array(ds.read(2)[minX:maxX,minY:maxY],dtype=np.float16)
-	    Prec[ct,:,:] = np.array(ds.read(4)[minX:maxX,minY:maxY],dtype=np.float16)
+	    Tmin[ct,:,:] =np.array(ds.read(1)[minX:maxX,minY:maxY],dtype=np.float32)
+	    Tmax[ct,:,:] =np.array(ds.read(2)[minX:maxX,minY:maxY],dtype=np.float32)
+	    Prec[ct,:,:] = np.array(ds.read(4)[minX:maxX,minY:maxY],dtype=np.float32)
 	    ct += 1 # increment the counter
 	    ct2 += 1 # increment 2nd counter
 
@@ -176,9 +179,9 @@ if os.path.isfile(gatheredDatFL) == False:
 else:
 	print('Loading NLDASv2 Regional Data')
 	with np.load(outfl) as inDat:
-	   Tmin = inDat['Tmin']
-	   Tmax = inDat['Tmax']
-	   Prec = inDat['Prec']
+	   Tmin = inDat['Tmin'].astype('float32')
+	   Tmax = inDat['Tmax'].astype('float32')
+	   Prec = inDat['Prec'].astype('float32')
 
 print('Length of gathered data: %s'%len(Prec))
 # now loop through each nhru in the region
