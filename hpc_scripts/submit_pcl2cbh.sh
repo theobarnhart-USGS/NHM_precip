@@ -22,7 +22,7 @@ source activate py36
 for var in {'P','Tmin','Tmax'}; do
 	
 	infl=~/projects/NHM_precipitation/data/NLDASv2_${var}_daily_reg_${reg}.pcl
-	outfl=/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_daily_cbh/NLDASv2_daily_region_${reg}_${var}.cbh
+	outfl=/home/tbarnhart/projects/NHM_precipitation/data/NLDASv2_daily_cbh/NLDASv2_daily_region_${reg}_${var}.cbh.zip
 	python -u pickle2cbh.py $reg $var $infl $outfl
 done
 echo 'Region '${reg}' complete.'
